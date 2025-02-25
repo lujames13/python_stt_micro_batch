@@ -37,7 +37,7 @@ python3 test_client_microphone.py -p 9080 -l zh-Hans-CN -project {PROJECT_ID} -l
 
 ## Gradio Demo
 ```
-python3 gradio-test.py -l zh-Hans-CN -project {PROJECT_ID} -location {location}
+python3 gradio-test.py -l cmn-Hant-TW -project {PROJECT_ID} -location {location}
 ```
 
 ## Development
