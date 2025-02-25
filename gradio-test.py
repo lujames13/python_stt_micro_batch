@@ -15,7 +15,7 @@ transcription_server_cache = pylru.lrucache(CACHE_SIZE)
 transcription_result_cache = pylru.lrucache(CACHE_SIZE)
 translation_cache = pylru.lrucache(CACHE_SIZE)  # Cache for translated content
 
-async def transcribe_and_translate_chunks_async(uuid_value, new_chunk, source_language="Chinese (Simplified, China)", target_language="Japanese (Japan)"):
+async def transcribe_and_translate_chunks_async(uuid_value, new_chunk, source_language="Chinese (Traditional, Taiwan)", target_language="Japanese (Japan)"):
     """Process audio chunk and return transcription and translation."""
     
     # Safety check - if UUID is empty or doesn't exist in cache, don't process
@@ -128,6 +128,7 @@ def stop_recording(uuid_value, audio_data, source_language="Chinese (Simplified,
 language_codes = [
     "en-US",  # English (United States)
     "zh-Hans-CN",  # Chinese (Simplified, China)
+    "cmn-Hant-TW",  # Traditional Chinese (Taiwan)
     "ja-JP",  # Japanese (Japan)
     "de-DE",  # German (Germany)
     "fr-FR",  # French (France)
@@ -138,11 +139,24 @@ language_codes = [
     "ar-EG",  # Arabic (Egypt)
 ]
 
-language_names = ['English (United States)', 'Chinese (Simplified, China)', 'Japanese (Japan)', 'German (Germany)', 'French (France)', 'Spanish (Spain)', 'Portuguese (Brazil)', 'Russian (Russia)', 'Hindi (India)', 'Arabic (Egypt)']
+language_names = [
+    'English (United States)', 
+    'Chinese (Simplified, China)', 
+    'Chinese (Traditional, Taiwan)',  # Added Traditional Chinese
+    'Japanese (Japan)', 
+    'German (Germany)', 
+    'French (France)', 
+    'Spanish (Spain)', 
+    'Portuguese (Brazil)', 
+    'Russian (Russia)', 
+    'Hindi (India)', 
+    'Arabic (Egypt)'
+]
 
 language_mappings = {
     "English (United States)": "en-US",
     "Chinese (Simplified, China)": "zh-Hans-CN",
+    "Chinese (Traditional, Taiwan)": "cmn-Hant-TW",  # Added Traditional Chinese
     "Japanese (Japan)": "ja-JP",
     "German (Germany)": "de-DE",
     "French (France)": "fr-FR",
@@ -190,7 +204,7 @@ with gr.Blocks() as demo:
         source_language = gr.Dropdown(
             choices=language_names, 
             label="原始語言", 
-            value="Chinese (Simplified, China)"
+            value="Chinese (Traditional, Taiwan)"
         )
         
         # Target language selection for translation

@@ -46,6 +46,7 @@ LANGUAGE_CODE_DIC = {
 LANGUAGE_MAPPING = {
     'en-US': 'English',
     'zh-Hans-CN': 'Chinese',
+    'cmn-Hant-TW':'Traditional Chinese',
     'ja-JP': 'Japanese',
     'de-DE': 'German',
     'fr-FR': 'French',
@@ -99,7 +100,7 @@ class TranscriptionServer:
         
         Args:
             text: Text to translate
-            source_language_code: Source language code (e.g., 'zh-Hans-CN')
+            source_language_code: Source language code (e.g., 'cmn-Hant-TW')
             target_language_code: Target language code (e.g., 'ja-JP')
             
         Returns:
