@@ -8,6 +8,8 @@ import vertexai
 from vertexai.generative_models import GenerativeModel, Part
 import vertexai.preview.generative_models as generative_models
 import asyncio
+from google import genai
+from google.genai.types import HttpOptions
 
 import stt_pb2 as stt__pb2
 import logging
@@ -18,14 +20,9 @@ from datetime import datetime
 import io
 import torch
 import json
+import os
 from vad import (VADIterator,read_audio)
 from utils_vad import (get_speech_timestamps)
-
-# wav = read_audio("vad-test.wav", 16000)
-# model1 = torch.jit.load('silero_vad/silero_vad.jit')
-
-# ts = get_speech_timestamps(wav, model1, 0.5)
-# print (ts)
 
 FORMAT = '%(levelname)s: %(asctime)s: %(message)s'
 logging.basicConfig(level=logging.INFO)
@@ -44,6 +41,20 @@ LANGUAGE_CODE_DIC = {
 'ja-JP':'Japanese',
 'pt-PT':'Portuguese',
 'es-ES':'Spanish'}
+
+# Mapping between language codes and full language names for translation
+LANGUAGE_MAPPING = {
+    'en-US': 'English',
+    'zh-Hans-CN': 'Chinese',
+    'ja-JP': 'Japanese',
+    'de-DE': 'German',
+    'fr-FR': 'French',
+    'es-ES': 'Spanish',
+    'pt-BR': 'Portuguese',
+    'ru-RU': 'Russian',
+    'hi-IN': 'Hindi',
+    'ar-EG': 'Arabic'
+}
 
 class TranscriptionServer:
     SAMPLING_RATE = 16000
@@ -66,6 +77,72 @@ class TranscriptionServer:
         self.last_start = -1
         self.all_transcriptions = []
         self.transcript_stream_results = []
+        
+        # Initialize Gemini client for translation
+        os.environ["GOOGLE_CLOUD_PROJECT"] = self.PROJECT_ID
+        os.environ["GOOGLE_CLOUD_LOCATION"] = self.LOCATION
+        os.environ["GOOGLE_GENAI_USE_VERTEXAI"] = "True"
+        self.genai_client = None
+
+    # Get or initialize Gemini client
+    def get_genai_client(self):
+        if self.genai_client is None:
+            self.genai_client = genai.Client(
+                http_options=HttpOptions(api_version="v1")
+            )
+        return self.genai_client
+
+    # Translate text function using Gemini
+    async def translate_text(self, text, source_language_code, target_language_code):
+        """
+        Translates text from source language to target language using Gemini
+        
+        Args:
+            text: Text to translate
+            source_language_code: Source language code (e.g., 'zh-Hans-CN')
+            target_language_code: Target language code (e.g., 'ja-JP')
+            
+        Returns:
+            Translated text
+        """
+        if not text.strip():
+            return ""
+            
+        # Get language names from codes for better prompting
+        source_language = LANGUAGE_MAPPING.get(source_language_code, "the source language")
+        target_language = LANGUAGE_MAPPING.get(target_language_code, "the target language")
+        
+        # Skip translation if source and target languages are the same
+        if source_language_code == target_language_code:
+            return text
+            
+        try:
+            # Create translation prompt
+            prompt = f"""Translate the following text from {source_language} to {target_language}. 
+            Maintain the original meaning, tone, and style. Just provide the translation with no explanations.
+            
+            Text to translate: {text}
+            
+            Translation:"""
+            
+            # Use asyncio to run the non-async translation call without blocking
+            loop = asyncio.get_running_loop()
+            client = self.get_genai_client()
+            
+            translation_result = await loop.run_in_executor(
+                None,
+                lambda: client.models.generate_content(
+                    model="gemini-1.5-flash-002",
+                    contents=prompt
+                )
+            )
+            
+            translated_text = translation_result.text.strip()
+            logger.info(f"Translated text from {source_language} to {target_language}")
+            return translated_text
+        except Exception as e:
+            logger.error(f"Translation error: {e}")
+            return text  # Return original text on error
 
     # used for .wav files input
     async def recv_audio(self,
@@ -95,6 +172,41 @@ class TranscriptionServer:
         except Exception as e:
              print(e)
              return None
+
+    # Receive audio and return both original transcript and translation
+    async def recv_audio_with_translation(self, new_chunk, language_code, target_language_code):
+        """
+        Process audio and return both transcription and translation
+        
+        Args:
+            new_chunk: Audio chunk
+            language_code: Source language code
+            target_language_code: Target language code for translation
+            
+        Returns:
+            Tuple of (transcription response, translated text)
+        """
+        transcript_response = await self.recv_audio(new_chunk, language_code)
+        
+        if transcript_response and transcript_response.results and len(transcript_response.results) > 0:
+            # Extract transcript text from response
+            transcript_text = ""
+            for result in transcript_response.results:
+                if result.alternatives and result.alternatives[0].transcript:
+                    transcript_text += result.alternatives[0].transcript
+                    if result.is_final:
+                        transcript_text += "\n"
+            
+            # Translate the transcript text
+            translated_text = await self.translate_text(
+                transcript_text,
+                language_code,
+                target_language_code
+            )
+            
+            return transcript_response, translated_text
+        
+        return transcript_response, ""
 
     # reconstructed output method
     def recv_audio_output(self, current_transcript_segments):
@@ -234,7 +346,6 @@ class TranscriptionServer:
         return self.recv_audio_output(current_transcript_segments)
 
     def find_first_no_transcript_segment(self, segments):
-        StreamingRecognizeResponse
         for segment in segments:
             if not 'transcript' in segment:
                 return segment
