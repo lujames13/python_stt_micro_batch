@@ -195,6 +195,8 @@ Detects GCP project and location metadata
 Handles dependency conflicts with google-genai
 Generates protocol buffers if needed
 
+
+
 ## Development
 Users need to access to specific services, you can refer to the code:test_client_microphone.py.
 The server use 'Gemini' as transcript engine, and you can switch the engine to 'Chirp_2', change 'transcribe_by_gemini' to 'transcribe' in ['transcribe_server.py'](transcribe_server.py) line 203.
