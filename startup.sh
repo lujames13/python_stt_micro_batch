@@ -120,32 +120,6 @@ else
     cd ..
 fi
 
-# 檢查現有的 tmux 會話
-echo "===== 檢查現有的 tmux 會話 ====="
-if tmux has-session -t stt_server 2>/dev/null; then
-    echo "終止現有的 stt_server tmux 會話..."
-    tmux kill-session -t stt_server
-fi
-
-if tmux has-session -t gradio_test 2>/dev/null; then
-    echo "終止現有的 gradio_test tmux 會話..."
-    tmux kill-session -t gradio_test
-fi
-
-# 安裝 tmux if needed
-if ! command -v tmux &> /dev/null; then
-    echo "安裝 tmux..."
-    sudo apt-get update
-    sudo apt-get install -y tmux
-fi
-
-# 在 tmux 會話中啟動 stt_server (端口改為 8080)
-echo "===== 在 tmux 背景會話中啟動 stt_server 服務 ====="
-tmux new-session -d -s stt_server "conda activate gemini-stt && cd $(pwd) && python3 stt_server.py -p 8080 -project \$PROJECT_ID -location \$LOCATION"
-echo "stt_server 已在後台啟動 (tmux 會話: stt_server, 端口: 8080)"
-echo "要查看 stt_server 日誌: tmux attach-session -t stt_server"
-echo "要從 tmux 會話分離: 按 Ctrl+B 然後 D"
-
 # 記錄當前目錄
 CURRENT_DIR=$(pwd)
 
