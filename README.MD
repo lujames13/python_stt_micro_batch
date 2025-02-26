@@ -188,11 +188,17 @@ Start the Gradio demo with the provided command
 The script automatically:
 
 Installs git (if needed)
+
 Installs Miniconda (if needed)
+
 Creates and configures a conda environment (gemini-stt)
+
 Clones the repository or updates an existing clone
+
 Detects GCP project and location metadata
+
 Handles dependency conflicts with google-genai
+
 Generates protocol buffers if needed
 
 
