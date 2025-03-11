@@ -47,9 +47,7 @@ python3 gradio-test.py -l cmn-Hant-TW -project {PROJECT_ID} -location {location}
 For deploying the Gradio demo on a new VM instance, follow these steps to automatically set up the environment:
 
 1. Copy and run the following commands on your new VM:
-```bash
-cat > startup.sh << 'EOF'
-#!/bin/bash
+```#!/bin/bash
 # 使用 --no-dependencies 安裝 google-genai 的啟動腳本
 set -e  # Exit immediately if a command exits with a non-zero status
 echo "===== 開始部署 STT 專案 (忽略依賴衝突版本) ====="
@@ -93,6 +91,7 @@ else
 fi
 # 啟用環境
 echo "===== 啟用 conda 環境 gemini-stt ====="
+source ~/.bashrc  # 這是之前缺少的行
 conda activate gemini-stt
 # 克隆儲存庫
 echo "===== 檢查儲存庫 ====="
